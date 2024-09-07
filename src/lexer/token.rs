@@ -4,20 +4,19 @@ pub struct Token {
     pub lexeme: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenKind {
     LParen,
     RParen,
     Number(NumberKind),
-    String,
     Identifier,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum NumberKind {
     Decimal,
-    Hexadecimal,
-    Octal,
-    Binary,
-    Float,
+    Base2,
+    Base8,
+    Base10,
+    Base16,
 }

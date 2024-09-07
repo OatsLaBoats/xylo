@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Error {
     pub kind: ErrorKind,
 
@@ -8,7 +8,7 @@ pub struct Error {
     pub message: String,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ErrorKind {
     SyntaxError,
     SemanticError,

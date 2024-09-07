@@ -1,2 +1,2 @@
 (function main ()
-  (print "Hello world"))
+  (+ 2 1))

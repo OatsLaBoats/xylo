@@ -1,6 +1,7 @@
 use xylo::{
-    lexer::Lexer,
-    parser::Parser,
+    lexer::lex,
+    parser::parse,
+    error::Error,
 };
 
 use std::{
@@ -27,22 +28,37 @@ fn main() {
     repl();
 }
 
+// TODO: There is probably a cleaner way to handle errors here but for now this will do.
 fn repl() {
-    let mut lexer = Lexer::new();
-    let mut parser = Parser::new();
-
     let mut input = String::new();
+    let mut errors: Vec<Error> = Vec::new();
 
     loop {
+        if errors.len() > 0 {
+            println!("{:?}", errors);
+        }
+
         input.clear();
+        errors.clear();
 
         print!("> ");
         let _ = io::stdout().flush();
         let _ = io::stdin().read_line(&mut input);
 
-        let tokens = lexer.tokenize(&input.as_bytes());
-        parser.parse(&tokens);
+        let lex_result = lex(&input.as_bytes());
+        if lex_result.is_err() {
+            errors.extend(lex_result.unwrap_err());
+            continue;
+        }
 
-        println!("{:?}", tokens);
+        let tokens = lex_result.unwrap();
+        let parse_result = parse(&tokens);
+        if parse_result.is_err() {
+            errors.extend(parse_result.unwrap_err());
+            continue;
+        }
+
+        let sexps = parse_result.unwrap();
+        println!("{:?}", sexps);
     }
 }
