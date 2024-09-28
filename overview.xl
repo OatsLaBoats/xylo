@@ -1,0 +1,64 @@
+# This is a comment
+
+#- this is a multi line comment -#
+
+# Will probably use reference counting optimized for immutable data.
+# Some ideas: 
+# 1. If a value is referenced only once then we can mutate it.
+#    This should also grant us thread safety? I would like to avoid atomic operations though.
+# 2. Analyze code to eliminate refence counting in some sitations where we know there is only one reference at compile time.
+
+# Circular dependencies are allowed as long as top level bindings don't depend on each other.
+
+# Macros can call other macros no problem but they can't call external code.
+
+# Things to add:
+# - all kinds of number literals
+
+{import Std.Console}
+{import Std.Console {exclude put-str Console-Stream}}
+{import Std.Console {include println Console}}
+{import-qualified Std.File}
+{import-qualified Std.Network Net}
+
+# This is the entrypoint of a program
+{function main {}
+  {println "Hello world"}}
+
+# This is how you define a function
+{function print-greeting [String -> Unit] {name}
+  {println {concat "Hello " name "!"}}}
+#
+# This is what the function keyword breaks down into
+{let print-greeting [String -> Unit]
+  {fun {name}
+    {println {concat "Hello " name "!"}}}}
+
+# Sweet expressions make some things easier
+{import Std.Console {exclude puts}}
+
+{function compute {a b}
+  ((a + b) * mod(a b) - {mod a b})}
+
+{function compute {a b}
+  ((a + b) * 2 + 3 + mod(a b) - (mod a b) + +(1 2 3 4))}
+
+# This is how you create infix functions
+{function infix-add [Num a => a, a -> a] {a b} {+ a b}}
+
+# This can have the same name as a function and will be used in place if said function in sweet expressions
+# This will throw an error if a function takes more than 3 arguments.
+{infixl + 5 infix-add}
+
+# We can either use a compile time method to deal with variadic args.
+# The problem with this is that this function will be like a generic function and have to be recompiled everytime it changes.
+{function + [Num a => a, a, a.. -> a] {a b rest..}
+  {repeatl C_add {C_add a b} rest}}
+
+# Or the more functional method and unroll the loop during optimization
+{function - {a b rest..}
+  {foldl {a - b} rest {fun {x acc} (acc - x)}}}
+
+# Named function call
+{let person
+  {make-person :name "Lyra" :age 24 :gender Gender.Female}}

@@ -1,17 +1,27 @@
-use xylo::{
-    lexer::lex,
-    parser::parse,
-    error::Error,
-};
+use xylo::repl::repl;
 
 use std::{
     fs::File,
     path::Path,
-    io::{
-        self,
-        prelude::*
-    },
+    io::prelude::*,
 };
+
+// TODO: Make a proper ast from S-Expressions
+// TODO: The lexer should produce S-Expressions
+// TODO: Improve error messages, add more metadata to ast and s-expressions.
+
+// TODO: Architecture change.
+// 1. The sexpr generator will take the text and put them into sexprs of tokens.
+// 2. it will keep Sweet and Type expressions as Tokens
+// 3. It will also parse and convert Literals
+// 4. First parse the imports.
+// 5. Then the compiler will take the result and find infix declarations, this will also be done in the
+//    sub modules.
+// 6. Then parse all else + functions and their content.
+// 7. The ast will contain sexp tokens because macros will need them.
+
+// TODO: Add sweet expressions to make some things less verbose.
+//       Keep in mind that this just gets translated to normal code by a preprosessor.
 
 fn main() {
     let path = Path::new("test.xl");
@@ -26,39 +36,4 @@ fn main() {
     file.read_to_end(&mut s).unwrap();
 
     repl();
-}
-
-// TODO: There is probably a cleaner way to handle errors here but for now this will do.
-fn repl() {
-    let mut input = String::new();
-    let mut errors: Vec<Error> = Vec::new();
-
-    loop {
-        if errors.len() > 0 {
-            println!("{:?}", errors);
-        }
-
-        input.clear();
-        errors.clear();
-
-        print!("> ");
-        let _ = io::stdout().flush();
-        let _ = io::stdin().read_line(&mut input);
-
-        let lex_result = lex(&input.as_bytes());
-        if lex_result.is_err() {
-            errors.extend(lex_result.unwrap_err());
-            continue;
-        }
-
-        let tokens = lex_result.unwrap();
-        let parse_result = parse(&tokens);
-        if parse_result.is_err() {
-            errors.extend(parse_result.unwrap_err());
-            continue;
-        }
-
-        let sexps = parse_result.unwrap();
-        println!("{:?}", sexps);
-    }
 }
