@@ -1,36 +1,21 @@
-use crate::utils::*;
+use crate::{
+    utils::*,
+    token::*,
+};
+
 use std::{
     str::FromStr,
     num::IntErrorKind,
 };
 
+mod scanner;
+use scanner::Scanner;
+
 // TODO: Clean this up
 // TODO: Maybe create a function that skips until the next S-Expression in certain cases
 
-#[derive(Debug)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub si: SourceInfo,
-}
-
-#[derive(Debug)]
-pub enum TokenKind {
-    SExpr(Vec<Token>),
-    TypeExpr(Vec<Token>),
-    SweetExpr(Vec<Token>),
-
-    Identifier(String),
-    
-    // Untyped integer literals
-    Int(i128),
-    UInt(u128),
-
-    // Untyped float literal
-    Float(f64),
-}
-
 // TODO: Might want to skip until the start of the next S-Expression on error.
-pub fn lex(ascii_text: &[u8]) -> Result<Vec<Token>, Vec<Error>> {
+pub fn tokenize(ascii_text: &[u8]) -> Result<Vec<Token>, Vec<Error>> {
     let mut scanner = Scanner::new(ascii_text);
     let mut errors: Vec<Error> = Vec::new();
     let mut tokens: Vec<Token> = Vec::new();
@@ -94,9 +79,34 @@ fn scan_token(scanner: &mut Scanner) -> Result<Token, Error> {
         '^'..='`'|'|'|'~' => return scan_identifier(scanner),
 
         '0'..='9' => return scan_number(scanner),
+
+        '"' => return scan_string(scanner),
         
         _ => todo!(),
     }
+}
+
+fn scan_string(scanner: &mut Scanner) -> Result<Token, Error> {
+    let si = scanner.get_source_info();
+    
+    scanner.advance();
+    let start = scanner.index;
+
+    while !scanner.is_at_end() {
+        let c = scanner.advance();
+        if c == '"' {
+            let slice = &scanner.text[start..scanner.index - 1];
+            return Ok(Token {
+                kind: TokenKind::String(slice.to_vec()),
+                si,
+            });
+        }
+    }
+
+    return Err(Error {
+        message: "Unterminated string literal".to_string(),
+        si: scanner.get_source_info(),
+    });
 }
 
 fn scan_number(scanner: &mut Scanner) -> Result<Token, Error> {
@@ -153,7 +163,7 @@ fn scan_number(scanner: &mut Scanner) -> Result<Token, Error> {
         }
 
         let slice = &scanner.text[start..scanner.index];
-        let s = std::str::from_utf8(slice).unwrap(); // This should never fail.
+        let s = std::str::from_utf8(slice).unwrap();
 
         if is_float {
             let value = f64::from_str(s).unwrap();
@@ -247,86 +257,5 @@ fn skip_whitespace(scanner: &mut Scanner) {
         } else {
             break;
         }
-    }
-}
-
-struct Scanner<'a> {
-    text: &'a [u8],
-    index: usize,
-
-    line: i64,
-    column: i64,
-
-    newline: bool,
-}
-
-impl<'a> Scanner<'a> {
-    fn new(text: &'a [u8]) -> Self {
-        Self {
-            text,
-            index: 0,
-
-            line: 1,
-            column: 1,
-
-            newline: false,
-        }
-    }
-
-    fn is_at_end(&self) -> bool {
-        self.index >= self.text.len()
-    }
-
-    fn advance(&mut self) -> char {
-        if self.is_at_end() {
-            return '\0';
-        }
-
-        let c = self.text[self.index] as char;
-
-        if self.newline {
-            self.newline = false;
-            self.line += 1;
-            self.column = 1;
-        } else {
-            self.column += 1;
-        }
-
-        if c == '\n' {
-            self.newline = true;
-        }
-
-        self.index += 1;
-
-        return c;
-    }
-
-    fn skip(&mut self, amount: usize) {
-        for _ in 0..amount {
-            if self.advance() == '\0' {
-                break;
-            }
-        }
-    }
-
-    fn peek(&self) -> char {
-        self.text[self.index] as char
-    }
-
-    fn match_string(&self, s: &str) -> bool {
-        if self.text.len() < s.len() + self.index {
-            return false;
-        }
-
-        let slice = &self.text[self.index .. self.index + s.len()];
-        return slice == s.as_bytes();
-    }
-
-    fn match_char(&self, c: char) -> bool {
-        self.peek() == c
-    }
-
-    fn get_source_info(&self) -> SourceInfo {
-        SourceInfo::new(self.line, self.column, self.index)
     }
 }

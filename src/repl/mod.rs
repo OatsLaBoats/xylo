@@ -1,6 +1,5 @@
 use crate::{
-    utils::Error,
-    lexer::lex,
+    tokenizer::tokenize,
 };
 
 use std::io::{
@@ -23,7 +22,7 @@ pub fn repl() {
             break;
         }
 
-        let lex_result = lex(input.as_bytes());
+        let lex_result = tokenize(input.as_bytes());
         if lex_result.is_err() {
             let errors = lex_result.unwrap_err();
             for e in &errors {

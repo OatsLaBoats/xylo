@@ -6,19 +6,21 @@ use std::{
     io::prelude::*,
 };
 
+// NOTE: Optimize everything later
+
 // TODO: Make a proper ast from S-Expressions
-// TODO: The lexer should produce S-Expressions
 // TODO: Improve error messages, add more metadata to ast and s-expressions.
 
-// TODO: Architecture change.
-// 1. The sexpr generator will take the text and put them into sexprs of tokens.
-// 2. it will keep Sweet and Type expressions as Tokens
-// 3. It will also parse and convert Literals
-// 4. First parse the imports.
-// 5. Then the compiler will take the result and find infix declarations, this will also be done in the
-//    sub modules.
-// 6. Then parse all else + functions and their content.
-// 7. The ast will contain sexp tokens because macros will need them.
+// Architecture
+// Lexer produces S-Expressions made up of tokens.
+// Parser 1st pass Collect everything that you can.
+// Parser 2nd pass translate sweet expressions.
+// Parser 3rd pass execute macro expressions.
+// Analyser pass
+// Typechecker/inference pass
+
+// It might not even need an ast
+// We can probably perform a syntax pass on raw s-expressions and then work on them directly
 
 // TODO: Add sweet expressions to make some things less verbose.
 //       Keep in mind that this just gets translated to normal code by a preprosessor.

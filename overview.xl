@@ -14,6 +14,7 @@
 
 # Things to add:
 # - all kinds of number literals
+# - Potentially have a convention where macros are with-file
 
 {import Std.Console}
 {import Std.Console {exclude put-str Console-Stream}}
@@ -21,13 +22,47 @@
 {import-qualified Std.File}
 {import-qualified Std.Network Net}
 
+{function a-func [a, b -> c] {a b} {b}}
+{function a-func [a, b -> c] {a b} {do-something a b}}
+
+{function a-func [a Num Eq, b Num => a, b -> c] {a b} {do-something a b}}
+{let a-func [a Num Eq, b Num => a, b -> c] {fun {a b} {do-something a b}}}
+ 
+{struct My-Struct 
+  {where 
+    {a Num} 
+    {b Num Eq Debug}}
+  {field1 [Num a => List a]} # This will throw an error since this syntax is only valid if the type is a function
+  {field2 b}}
+
+{enum My-Maybe
+  {where a}
+  {Some a}
+  {None}}
+
 # This is the entrypoint of a program
 {function main {}
   {println "Hello world"}}
 
+# A function must take at least one parameter and return an other
+{function main [Unit -> Unit] {_}
+  {println "Hello wolrd"}}
+
+# A procedure takes no arguments but returns a value
+{procedure main [Unit] 
+  {println "Hello world"}
+  {println {concat {get-args}}} # When calling a procedure we don't need to provide any arguments, not even 'unit'
+
+# procedures are useful when dealing with void function from c bindings
+{procedure get-args [List String] {extern "C_get_cmd_args"}}
+
+{function main [Int, Int -> Unit]}
+
 # This is how you define a function
 {function print-greeting [String -> Unit] {name}
   {println {concat "Hello " name "!"}}}
+
+{function print-hello {; name} {println name}}
 #
 # This is what the function keyword breaks down into
 {let print-greeting [String -> Unit]
@@ -38,10 +73,10 @@
 {import Std.Console {exclude puts}}
 
 {function compute {a b}
-  ((a + b) * mod(a b) - {mod a b})}
+  ((a + b) * {mod a b} + (a mod b) - {mod a b})}
 
 {function compute {a b}
-  ((a + b) * 2 + 3 + mod(a b) - (mod a b) + +(1 2 3 4))}
+  ((a + b) * 2 + 3 + (a mod b) - {mod a b} + {+ 1 2 3 4})}
 
 # This is how you create infix functions
 {function infix-add [Num a => a, a -> a] {a b} {+ a b}}
@@ -61,4 +96,4 @@
 
 # Named function call
 {let person
-  {make-person :name "Lyra" :age 24 :gender Gender.Female}}
+  {make-person @name "Lyra" @age 24 @gender Gender.Female}}

@@ -6,6 +6,7 @@ pub struct Error {
     pub message: String,
 }
 
+// Remove new
 impl Error {
     pub fn new(message: String, si: SourceInfo) -> Self {
         Self {
