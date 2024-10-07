@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap, 
+    ops::Range,
+};
 
 use crate::token::*;
 
@@ -15,22 +18,23 @@ impl Program {
         }
     }
 
-    pub fn add_module(&mut self, name: String, code: Vec<Token>) {
+    pub fn get_ids(&self) -> Range<usize> {
+        0..self.modules.len()
+    }
+
+    pub fn new_module(&mut self, name: String, code: Vec<Token>) {
         let id = self.modules.len();
 
         self.module_lookup.insert(name.clone(), id);
-        self.modules.push(Module {
-            id,
-            name,
-            code,
-
-            variables: HashMap::new(),
-            procedures: HashMap::new(),
-        });
+        self.modules.push(Module::new(id, name, code));
     }
 
     pub fn get_modules(&self) -> &[Module] {
         &self.modules
+    }
+
+    pub fn get_modules_mut(&mut self) -> &mut [Module] {
+        &mut self.modules
     }
 
     pub fn get_module_id(&self, name: &String) -> Option<usize> {
@@ -59,10 +63,17 @@ pub struct Module {
     pub name: String,
     pub code: Vec<Token>,
 
-    variables: HashMap<String, usize>,
-    procedures: HashMap<String, usize>,
+    pub variables: HashMap<String, usize>,
+    pub procedures: HashMap<String, usize>,
 }
 
 impl Module {
-    
+    pub fn new(id: usize, name: String, code: Vec<Token>) -> Self {
+        Self {
+            id, name, code,
+
+            variables: HashMap::new(),
+            procedures: HashMap::new(),
+        }
+    }
 }

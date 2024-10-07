@@ -25,6 +25,8 @@ use std::{
 // TODO: Add sweet expressions to make some things less verbose.
 //       Keep in mind that this just gets translated to normal code by a preprosessor.
 
+// TODO: Have a way to run S-expressions on their own but providing a module
+
 fn main() {
     let path = Path::new("test.xl");
     let path_text = path.display();

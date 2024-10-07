@@ -26,6 +26,43 @@ pub enum TokenKind {
     String(Vec<u8>),
 }
 
+impl Token {
+    pub fn get_sexp(&self) -> &[Token] {
+        match &self.kind {
+            TokenKind::SExpr(sexp) => sexp,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_sexp_mut(&mut self) -> &mut Vec<Token> {
+        match &mut self.kind {
+            TokenKind::SExpr(sexp) => sexp,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        match &self.kind {
+            TokenKind::Identifier(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_type(&self) -> bool {
+        match &self.kind {
+            TokenKind::TypeExpr(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn match_identifier(&self, s: &str) -> bool {
+        match &self.kind {
+            TokenKind::Identifier(name) => name == s,
+            _ => false,
+        }
+    }
+}
+
 // [Int]
 // [Int, Int -> int]
 // [List Int]

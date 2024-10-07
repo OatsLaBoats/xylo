@@ -8,6 +8,7 @@ use std::io::{
 };
 
 // TODO: There is probably a cleaner way to handle errors here but for now this will do.
+
 pub fn repl() {
     let mut input = String::new();
 
