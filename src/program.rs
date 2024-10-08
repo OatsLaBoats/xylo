@@ -5,6 +5,7 @@ use std::{
 
 use crate::token::*;
 
+#[derive(Debug)]
 pub struct Program {
     modules: Vec<Module>,
     module_lookup: HashMap<String, usize>,
@@ -58,6 +59,7 @@ impl Program {
     }
 }
 
+#[derive(Debug)]
 pub struct Module {
     pub id: usize,
     pub name: String,

@@ -12,7 +12,7 @@ use crate::{
 // pass2: Inner validation
 
 // Checks top level constructs for syntax errors + collection of functions
-pub fn syntax_pass1(program: &mut Program) -> Vec<Error> {
+pub fn pass1(program: &mut Program) -> Vec<Error> {
     let mut errors = Vec::new();
 
     let modules = program.get_modules_mut();
@@ -24,34 +24,40 @@ pub fn syntax_pass1(program: &mut Program) -> Vec<Error> {
 }
 
 fn pass1_check_module(module: &mut Module, errors: &mut Vec<Error>) {
-    for token in &mut module.code {
+    for (index, token) in module.code.iter_mut().enumerate() {
         if let TokenKind::SExpr(sexp) = &mut token.kind {
             if sexp.get(0).map_or(false, |t| t.match_identifier("function")) {
-                pass1_check_function(sexp, errors);
+                if pass1_check_function(sexp, errors) {
+                    let name = sexp.get(1).unwrap().get_identifier();
+                    module.variables.insert(name.clone(), index);
+                }
             }
         }
     }
 }
 
-fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) {
+fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) -> bool {
+    let si = sexp.get(0).unwrap().si;
+
     let has_name = sexp.get(1).map_or(false, |t| t.is_identifier());
     let has_type = sexp.get(2).map_or(false, |t| t.is_type());
 
     let mut has_params = false;
     let mut has_valid_params = true;
-    if let Some(token) = sexp.get(3) {
+
+    let params_index = if has_type { 3 } else { 2 };
+
+    if let Some(token) = sexp.get(params_index) {
         if let TokenKind::SExpr(params) = &token.kind {
             has_params = true;
-
             for param in params {
                 if !param.is_identifier() {
                     has_valid_params = false;
+                    break;
                 }
             }
         }
     }
-
-    let si = sexp.get(0).unwrap().si;
 
     if !has_name {
         errors.push(Error {
@@ -60,8 +66,12 @@ fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) {
         });
     }
 
-    if !has_type {
-        
+    // Insert an unknown type if its missing to infer it during type checking
+    if !has_type && has_params && has_valid_params {
+        sexp.insert(2, Token {
+            kind: TokenKind::TypeExpr(Type::Unknown),
+            si: SourceInfo::default(),
+        });
     }
 
     if !has_params {
@@ -75,4 +85,6 @@ fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) {
             si,
         });
     }
+
+    return has_name && has_params && has_valid_params;
 }

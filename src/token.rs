@@ -61,6 +61,13 @@ impl Token {
             _ => false,
         }
     }
+
+    pub fn get_identifier(&self) -> &String {
+        match &self.kind {
+            TokenKind::Identifier(id) => id,
+            _ => unreachable!(),
+        }
+    }
 }
 
 // [Int]

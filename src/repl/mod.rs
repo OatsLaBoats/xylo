@@ -1,5 +1,7 @@
 use crate::{
     tokenizer::tokenize,
+    program::*,
+    analyzer::syntax,
 };
 
 use std::io::{
@@ -11,6 +13,7 @@ use std::io::{
 
 pub fn repl() {
     let mut input = String::new();
+    let mut program = Program::new();
 
     loop {
         input.clear();
@@ -34,6 +37,9 @@ pub fn repl() {
         }
 
         let tokens = lex_result.unwrap();
-        println!("{:?}", tokens);
+        program.new_module("repl".to_string(), tokens);
+
+        let errors = syntax::pass1(&mut program);
+        println!("{:?} {:?}", errors, program.get_module_by_name(&"repl".to_string()));
      }
 }
