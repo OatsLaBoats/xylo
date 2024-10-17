@@ -1,7 +1,10 @@
 use crate::{
     tokenizer::tokenize,
     program::*,
-    analyzer::syntax,
+    analyzer::{
+        syntax,
+        utils::*,
+    },
 };
 
 use std::io::{
@@ -14,6 +17,9 @@ use std::io::{
 pub fn repl() {
     let mut input = String::new();
     let mut program = Program::new();
+
+    let module_id = program.new_module("repl".to_string(), Vec::new());
+    let module = program.get_module_by_id_mut(module_id).unwrap();
 
     loop {
         input.clear();
@@ -36,10 +42,23 @@ pub fn repl() {
             continue;
         }
 
-        let tokens = lex_result.unwrap();
-        program.new_module("repl".to_string(), tokens);
+        let mut tokens = lex_result.unwrap();
 
-        let errors = syntax::pass1(&mut program);
-        println!("{:?} {:?}", errors, program.get_module_by_name(&"repl".to_string()));
+        let errors = syntax::pass1_code(&mut tokens);
+        if errors.len() == 0 {
+            for token in tokens {
+                if is_variable(&token) {
+                    module.add_variable(token);
+                } else if is_procedure(&token) {
+                    module.add_procedure(token);
+                }
+            }
+        }
+
+        println!("{:?}", errors);
+
+        for var in &module.code {
+            print!("{}\n\n", var.to_string());
+        }
      }
 }

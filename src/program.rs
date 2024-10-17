@@ -23,11 +23,13 @@ impl Program {
         0..self.modules.len()
     }
 
-    pub fn new_module(&mut self, name: String, code: Vec<Token>) {
+    pub fn new_module(&mut self, name: String, code: Vec<Token>) -> usize {
         let id = self.modules.len();
 
         self.module_lookup.insert(name.clone(), id);
         self.modules.push(Module::new(id, name, code));
+
+        return id;
     }
 
     pub fn get_modules(&self) -> &[Module] {
@@ -77,5 +79,17 @@ impl Module {
             variables: HashMap::new(),
             procedures: HashMap::new(),
         }
+    }
+
+    pub fn add_variable(&mut self, code: Token) {
+        let name = code.sexpr().unwrap().get(1).unwrap().identifier().unwrap().clone();
+        self.code.push(code);
+        self.variables.insert(name, self.code.len() - 1);
+    }
+
+    pub fn add_procedure(&mut self, code: Token) {
+        let name = code.sexpr().unwrap().get(1).unwrap().identifier().unwrap().clone();
+        self.code.push(code);
+        self.procedures.insert(name, self.code.len() - 1);
     }
 }

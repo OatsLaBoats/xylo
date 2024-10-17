@@ -1,2 +1,2 @@
-(function main ()
-  (+ 2 1))
+{procedure main 
+    {println "Hello"}}

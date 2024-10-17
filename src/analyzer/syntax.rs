@@ -9,45 +9,106 @@ use crate::{
 // yet
 
 // pass1: Top level validation and collection of functions and macros
-// pass2: Inner validation
+// pass2: we don't need pass2
 
 // Checks top level constructs for syntax errors + collection of functions
 pub fn pass1(program: &mut Program) -> Vec<Error> {
     let mut errors = Vec::new();
 
-    let modules = program.get_modules_mut();
-    for module in modules {
-        pass1_check_module(module, &mut errors);
+    for module in program.get_modules_mut() {
+        pass1_module(module, &mut errors);
     }
 
     return errors;
 }
 
-fn pass1_check_module(module: &mut Module, errors: &mut Vec<Error>) {
+// For repl use
+pub fn pass1_code(code: &mut Vec<Token>) -> Vec<Error> {
+    let mut errors = Vec::new();
+
+    for token in code {
+        if token.is_sexpr() {
+            pass1_sexpr(token, &mut errors);
+        }
+    }
+
+    return errors;
+}
+
+fn pass1_module(module: &mut Module, errors: &mut Vec<Error>) {
     for (index, token) in module.code.iter_mut().enumerate() {
-        if let TokenKind::SExpr(sexp) = &mut token.kind {
-            if sexp.get(0).map_or(false, |t| t.match_identifier("function")) {
-                if pass1_check_function(sexp, errors) {
-                    let name = sexp.get(1).unwrap().get_identifier();
+        if token.is_sexpr() {
+            let n_errors = errors.len();
+            pass1_sexpr(token, errors);
+            
+            if errors.len() == n_errors {
+                if token.match_first_identifier("let") {
+                    let name = token.sexpr().unwrap().get(1).unwrap().identifier().unwrap();
                     module.variables.insert(name.clone(), index);
+                } else if token.match_first_identifier("procedure") {
+                    let name = token.sexpr().unwrap().get(1).unwrap().identifier().unwrap();
+                    module.procedures.insert(name.clone(), index);
                 }
             }
+        } else {
+            errors.push(Error {
+                message: "Only s-expressions are allowed at the top level".to_string(),
+                si: token.si,
+            });
         }
     }
 }
 
-fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) -> bool {
-    let si = sexp.get(0).unwrap().si;
+fn pass1_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    if sexpr.match_first_identifier("function") {
+        pass1_function(sexpr, errors);
+    } else if sexpr.match_first_identifier("procedure") {
+        pass1_procedure(sexpr, errors);
+    }
+}
 
-    let has_name = sexp.get(1).map_or(false, |t| t.is_identifier());
-    let has_type = sexp.get(2).map_or(false, |t| t.is_type());
+fn pass1_procedure(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    let sexpr = sexpr.sexpr_mut().unwrap();
+    let si = sexpr[0].si;
+
+    let has_name = sexpr.get(1).map_or(false, |t| t.is_identifier());
+    let has_type = sexpr.get(2).map_or(false, |t| t.is_type());
+
+    if !has_name {
+        errors.push(Error {
+            message: "Procedures require a name".to_string(),
+            si,
+        });
+    }
+
+    if !has_type {
+        sexpr.insert(2, Token {
+            kind: TokenKind::TypeExpr(Type::Unknown),
+            si: SourceInfo::default(),
+        });
+    }
+
+    for i in 3..sexpr.len() {
+        let token = &mut sexpr[i];
+        if token.is_sexpr() {
+            pass1_sexpr(token, errors);
+        }
+    }
+}
+
+fn pass1_function(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    let sexpr = sexpr.sexpr_mut().unwrap();
+    let si = sexpr[0].si;
+
+    let has_name = sexpr.get(1).map_or(false, |t| t.is_identifier());
+    let has_type = sexpr.get(2).map_or(false, |t| t.is_type());
 
     let mut has_params = false;
     let mut has_valid_params = true;
 
     let params_index = if has_type { 3 } else { 2 };
 
-    if let Some(token) = sexp.get(params_index) {
+    if let Some(token) = sexpr.get(params_index) {
         if let TokenKind::SExpr(params) = &token.kind {
             has_params = true;
             for param in params {
@@ -66,14 +127,6 @@ fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) -> bool 
         });
     }
 
-    // Insert an unknown type if its missing to infer it during type checking
-    if !has_type && has_params && has_valid_params {
-        sexp.insert(2, Token {
-            kind: TokenKind::TypeExpr(Type::Unknown),
-            si: SourceInfo::default(),
-        });
-    }
-
     if !has_params {
         errors.push(Error {
             message: "Functions are required to have at least one parameter".to_string(),
@@ -86,5 +139,30 @@ fn pass1_check_function(sexp: &mut Vec<Token>, errors: &mut Vec<Error>) -> bool 
         });
     }
 
-    return has_name && has_params && has_valid_params;
+    if has_params && has_valid_params {
+        if !has_type {
+            sexpr.insert(2, Token {
+                kind: TokenKind::TypeExpr(Type::Unknown),
+                si: SourceInfo::default(),
+            });
+        }
+
+        sexpr[0] = Token {
+            kind: TokenKind::Identifier("let".to_string()),
+            si,
+        };
+
+        let mut body = vec![
+            Token { kind: TokenKind::Identifier("fun".to_string()), si: SourceInfo::default() },
+            sexpr.remove(3),
+        ];
+
+        for i in (3..sexpr.len()).rev() {
+            body.push(sexpr.remove(i));
+        }
+
+        sexpr.push(Token { kind: TokenKind::SExpr(body), si: SourceInfo::default() });
+    }
+    
+    pass1_sexpr(&mut sexpr[3], errors);
 }

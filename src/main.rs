@@ -6,6 +6,8 @@ use std::{
     io::prelude::*,
 };
 
+// Move source info and Error to some different module it doesn't fit utils
+
 // NOTE: Optimize everything later
 
 // TODO: Make a proper ast from S-Expressions

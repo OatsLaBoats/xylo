@@ -26,18 +26,27 @@ pub enum TokenKind {
     String(Vec<u8>),
 }
 
+// TODO: Maybe I should make some of these functions return an option instead of crashing
+// TODO: Make some function that allow you to check if an s expression is a function
 impl Token {
-    pub fn get_sexp(&self) -> &[Token] {
+    pub fn sexpr(&self) -> Option<&[Token]> {
         match &self.kind {
-            TokenKind::SExpr(sexp) => sexp,
-            _ => unreachable!(),
+            TokenKind::SExpr(sexp) => Some(sexp),
+            _ => None,
         }
     }
 
-    pub fn get_sexp_mut(&mut self) -> &mut Vec<Token> {
+    pub fn sexpr_mut(&mut self) -> Option<&mut Vec<Token>> {
         match &mut self.kind {
-            TokenKind::SExpr(sexp) => sexp,
-            _ => unreachable!(),
+            TokenKind::SExpr(sexp) => Some(sexp),
+            _ => None,
+        }
+    }
+
+    pub fn is_sexpr(&self) -> bool {
+        match &self.kind {
+            TokenKind::SExpr(_) => true,
+            _ => false,
         }
     }
 
@@ -62,11 +71,61 @@ impl Token {
         }
     }
 
-    pub fn get_identifier(&self) -> &String {
-        match &self.kind {
-            TokenKind::Identifier(id) => id,
-            _ => unreachable!(),
+    pub fn match_first_identifier(&self, s: &str) -> bool {
+        self.match_n_identifier(s, 0)
+    }
+
+    pub fn match_n_identifier(&self, s: &str, index: usize) -> bool {
+        if let TokenKind::SExpr(sexp) = &self.kind {
+            if let Some(token) = sexp.get(index) {
+                if let TokenKind::Identifier(id) = &token.kind {
+                    return id == s;
+                }
+            }
         }
+
+        return false;
+    }
+
+    pub fn identifier(&self) -> Option<&String> {
+        match &self.kind {
+            TokenKind::Identifier(id) => Some(id),
+            _ => None,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        fn token_to_string(token: &Token, acc: &mut String, indentation: i32) {
+            match &token.kind {
+                TokenKind::Identifier(v) => acc.push_str(&format!("Identifier({}) ", v)),
+                TokenKind::String(v) => acc.push_str(&format!("String(\"{}\") ", unsafe { String::from_utf8_unchecked(v.to_vec()) })),
+                TokenKind::Int(v) => acc.push_str(&format!("Int({}) ", v)),
+                TokenKind::UInt(v) => acc.push_str(&format!("UInt({}) ", v)),
+                TokenKind::Float(v) => acc.push_str(&format!("Float({}) ", v)),
+                TokenKind::SExpr(v) => {
+                    if indentation > 0 {
+                        acc.push('\n');
+                    }
+                    
+                    for _ in 0..indentation {
+                        acc.push_str("  ");
+                    }
+
+                    acc.push_str("SExpr( ");
+                    
+                    for t in v {
+                        token_to_string(t, acc, indentation + 1);
+                    }
+
+                    acc.push(')');
+                },
+                _ => {},
+            }
+        }
+
+        let mut result = String::new();
+        token_to_string(self, &mut result, 0);
+        return result;
     }
 }
 
