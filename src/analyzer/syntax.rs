@@ -64,6 +64,82 @@ fn pass1_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
         pass1_function(sexpr, errors);
     } else if sexpr.match_first_identifier("procedure") {
         pass1_procedure(sexpr, errors);
+    } else if sexpr.match_first_identifier("let") {
+        pass1_let(sexpr, errors);
+    } else if sexpr.match_first_identifier("fun") {
+        pass1_fun(sexpr, errors);
+    }
+}
+
+fn pass1_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    let sexpr = sexpr.sexpr_mut().unwrap();
+    let si = sexpr[0].si;
+
+    let mut has_params = false;
+    let mut has_valid_params = true;
+
+    if let Some(token) = sexpr.get(1) {
+        if let TokenKind::SExpr(params) = &token.kind {
+            has_params = true;
+            for p in params {
+                if !p.is_identifier() {
+                    has_valid_params = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if !has_params {
+        errors.push(Error {
+            message: "Lambda functions require a parameter list".to_string(),
+            si,
+        });
+    } else if !has_valid_params {
+        errors.push(Error {
+            message: "Paramaters need to be valid identifiers".to_string(),
+            si,
+        });
+    }
+
+    if let Some(body) = sexpr.get_mut(2) {
+        pass1_sexpr(body, errors);
+    } else {
+        errors.push(Error {
+            message: "Lambda functions require a body".to_string(),
+            si,
+        });
+    }
+}
+
+fn pass1_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    let sexpr = sexpr.sexpr_mut().unwrap();
+    let si = sexpr[0].si;
+
+    let has_name = sexpr.get(1).map_or(false, |t| t.is_identifier());
+    let has_type = sexpr.get(2).map_or(false, |t| t.is_type());
+
+    if !has_name {
+        errors.push(Error {
+            message: "Variables require a name".to_string(),
+            si,
+        });
+    }
+
+    if !has_type {
+        sexpr.insert(2, Token {
+            kind: TokenKind::TypeExpr(Type::Unknown),
+            si: SourceInfo::default(),
+        });
+    }
+
+    if let Some(value) = sexpr.get_mut(3) {
+        pass1_sexpr(value, errors);
+    } else {
+        errors.push(Error {
+            message: "Variables require an initial value".to_string(),
+            si,
+        });
     }
 }
 
