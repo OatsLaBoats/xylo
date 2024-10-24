@@ -13,6 +13,7 @@ use std::io::{
 };
 
 // TODO: There is probably a cleaner way to handle errors here but for now this will do.
+// TODO: Add proper command parsing like :exit :build :load :ast
 
 pub fn repl() {
     let mut input = String::new();
@@ -51,6 +52,8 @@ pub fn repl() {
                     module.add_variable(token);
                 } else if is_procedure(&token) {
                     module.add_procedure(token);
+                } else {
+                    module.add_expression(token);
                 }
             }
         }

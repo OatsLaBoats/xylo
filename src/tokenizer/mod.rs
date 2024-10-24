@@ -22,8 +22,16 @@ pub fn tokenize(ascii_text: &[u8]) -> Result<Vec<Token>, Vec<Error>> {
 
     skip_whitespace(&mut scanner);
     while !scanner.is_at_end() {
-        match scan_sexpr(&mut scanner) {
-            Ok(token) => tokens.push(token),
+        match scan_token(&mut scanner) {
+            Ok(token) => match &token.kind {
+                TokenKind::TypeExpr(_) => errors.push(Error {
+                    message: "Type expressions can not be written at the top level".to_string(),
+                    si: token.si,
+                }),
+
+                _ => tokens.push(token),
+            },
+
             Err(error) => errors.push(error),
         }
 
@@ -31,6 +39,25 @@ pub fn tokenize(ascii_text: &[u8]) -> Result<Vec<Token>, Vec<Error>> {
     }
 
     return if errors.len() > 0 { Err(errors) } else { Ok(tokens) };
+}
+
+fn scan_token(scanner: &mut Scanner) -> Result<Token, Error> {
+    let c = scanner.peek();
+
+    match c {
+        '{' => return scan_sexpr(scanner),
+
+        'a'..='z'|'A'..='Z'|
+        '!'|'$'..='&'|'*'|'+'|
+        '-'|'/'|':'..='@'|'\\'|
+        '^'..='`'|'|'|'~' => return scan_identifier(scanner),
+
+        '0'..='9' => return scan_number(scanner),
+
+        '"' => return scan_string(scanner),
+        
+        _ => todo!(),
+    }
 }
 
 fn scan_sexpr(scanner: &mut Scanner) -> Result<Token, Error> {
@@ -65,25 +92,6 @@ fn scan_sexpr(scanner: &mut Scanner) -> Result<Token, Error> {
         kind: TokenKind::SExpr(sexpr),
         si: sexpr_si,
     });
-}
-
-fn scan_token(scanner: &mut Scanner) -> Result<Token, Error> {
-    let c = scanner.peek();
-
-    match c {
-        '{' => return scan_sexpr(scanner),
-
-        'a'..='z'|'A'..='Z'|
-        '!'|'$'..='&'|'*'|'+'|
-        '-'|'/'|':'..='@'|'\\'|
-        '^'..='`'|'|'|'~' => return scan_identifier(scanner),
-
-        '0'..='9' => return scan_number(scanner),
-
-        '"' => return scan_string(scanner),
-        
-        _ => todo!(),
-    }
 }
 
 fn scan_string(scanner: &mut Scanner) -> Result<Token, Error> {

@@ -69,6 +69,8 @@ pub struct Module {
 
     pub variables: HashMap<String, usize>,
     pub procedures: HashMap<String, usize>,
+
+    pub expressions: Vec<usize>,
 }
 
 impl Module {
@@ -78,6 +80,8 @@ impl Module {
 
             variables: HashMap::new(),
             procedures: HashMap::new(),
+
+            expressions: Vec::new(),
         }
     }
 
@@ -91,5 +95,10 @@ impl Module {
         let name = code.sexpr().unwrap().get(1).unwrap().identifier().unwrap().clone();
         self.code.push(code);
         self.procedures.insert(name, self.code.len() - 1);
+    }
+
+    pub fn add_expression(&mut self, code: Token) {
+        self.code.push(code);
+        self.expressions.push(self.code.len() - 1);
     }
 }

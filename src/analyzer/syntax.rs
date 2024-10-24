@@ -51,10 +51,7 @@ fn pass1_module(module: &mut Module, errors: &mut Vec<Error>) {
                 }
             }
         } else {
-            errors.push(Error {
-                message: "Only s-expressions are allowed at the top level".to_string(),
-                si: token.si,
-            });
+            module.expressions.push(index);
         }
     }
 }

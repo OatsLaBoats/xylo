@@ -14,7 +14,7 @@ use std::{
 // TODO: Improve error messages, add more metadata to ast and s-expressions.
 
 // Architecture
-// Lexer produces S-Expressions made up of tokens.
+// Tokenizer produces S-Expressions made up of tokens.
 // Parser 1st pass Collect everything that you can.
 // Parser 2nd pass translate sweet expressions.
 // Parser 3rd pass execute macro expressions.
@@ -28,6 +28,9 @@ use std::{
 //       Keep in mind that this just gets translated to normal code by a preprosessor.
 
 // TODO: Have a way to run S-expressions on their own but providing a module
+
+// TODO: Allow top level expressions but exclude them at compile time
+// TODO: Allow self evaluating expression at top level.
 
 fn main() {
     let path = Path::new("test.xl");
