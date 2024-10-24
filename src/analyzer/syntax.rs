@@ -8,8 +8,8 @@ use crate::{
 // Also have some way to do partial validation to a module for parts that have not been expanded
 // yet
 
-// pass1: Top level validation and collection of functions and macros
-// pass2: we don't need pass2
+// pass1: core syntax validation, collection of functions and macros
+// pass2: function/macro syntax pass
 
 // Checks top level constructs for syntax errors + collection of functions
 pub fn pass1(program: &mut Program) -> Vec<Error> {

@@ -119,6 +119,14 @@ impl Token {
 
                     acc.push(')');
                 },
+
+                TokenKind::TypeExpr(v) => {
+                    match v {
+                        Type::Unknown => acc.push_str("TypeExpr(Unknown) "),
+                        _ => {},
+                    }
+                }
+
                 _ => {},
             }
         }
