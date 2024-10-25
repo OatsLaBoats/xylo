@@ -45,7 +45,7 @@ pub fn repl() {
 
         let mut tokens = lex_result.unwrap();
 
-        let errors = syntax::pass1_code(&mut tokens);
+        let errors = syntax::validate_code(&mut tokens);
         if errors.len() == 0 {
             for token in tokens {
                 if is_variable(&token) {

@@ -5,32 +5,32 @@ use crate::{
 };
 
 // Checks top level constructs for syntax errors + collection of functions
-pub fn pass1(program: &mut Program) -> Vec<Error> {
+pub fn validate(program: &mut Program) -> Vec<Error> {
     let mut errors = Vec::new();
 
     for module in program.get_modules_mut() {
-        pass1_module(module, &mut errors);
+        validate_module(module, &mut errors);
     }
 
     return errors;
 }
 
 // For repl use
-pub fn pass1_code(code: &mut Vec<Token>) -> Vec<Error> {
+pub fn validate_code(code: &mut Vec<Token>) -> Vec<Error> {
     let mut errors = Vec::new();
 
     for token in code {
-        pass1_token(token, &mut errors);
+        validate_token(token, &mut errors);
     }
 
     return errors;
 }
 
-fn pass1_module(module: &mut Module, errors: &mut Vec<Error>) {
+fn validate_module(module: &mut Module, errors: &mut Vec<Error>) {
     for (index, token) in module.code.iter_mut().enumerate() {
         if token.is_sexpr() {
             let n_errors = errors.len();
-            pass1_sexpr(token, errors);
+            validate_sexpr(token, errors);
             
             if errors.len() == n_errors {
                 if token.match_first_identifier("let") {
@@ -47,36 +47,36 @@ fn pass1_module(module: &mut Module, errors: &mut Vec<Error>) {
     }
 }
 
-fn pass1_token(token: &mut Token, errors: &mut Vec<Error>) {
+fn validate_token(token: &mut Token, errors: &mut Vec<Error>) {
     if token.is_sexpr() {
-        pass1_sexpr(token, errors);
+        validate_sexpr(token, errors);
     }
 }
 
-fn pass1_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
     if sexpr.match_first_identifier("function") {
-        pass1_function(sexpr, errors);
+        validate_function(sexpr, errors);
     } else if sexpr.match_first_identifier("procedure") {
-        pass1_procedure(sexpr, errors);
+        validate_procedure(sexpr, errors);
     } else if sexpr.match_first_identifier("let") {
-        pass1_let(sexpr, errors);
+        validate_let(sexpr, errors);
     } else if sexpr.match_first_identifier("fun") {
-        pass1_fun(sexpr, errors);
+        validate_fun(sexpr, errors);
     } else {
-        pass1_call(sexpr, errors);
+        validate_call(sexpr, errors);
     }
 }
 
-fn pass1_call(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_call(sexpr: &mut Token, errors: &mut Vec<Error>) {
     let sexpr = sexpr.sexpr_mut().unwrap();
     if sexpr.len() > 1 {
         for token in &mut sexpr[1..] {
-            pass1_token(token, errors);
+            validate_token(token, errors);
         }
     }
 }
 
-fn pass1_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
     let sexpr = sexpr.sexpr_mut().unwrap();
     let si = sexpr[0].si;
 
@@ -109,7 +109,7 @@ fn pass1_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
 
     if sexpr.len() >= 3 {
         for token in &mut sexpr[3..] {
-            pass1_token(token, errors);
+            validate_token(token, errors);
         }
     } else {
         errors.push(Error {
@@ -119,7 +119,7 @@ fn pass1_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
     }
 }
 
-fn pass1_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
     let sexpr = sexpr.sexpr_mut().unwrap();
     let si = sexpr[0].si;
 
@@ -141,7 +141,7 @@ fn pass1_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
     }
 
     if let Some(value) = sexpr.get_mut(3) {
-        pass1_token(value, errors);
+        validate_token(value, errors);
     } else {
         errors.push(Error {
             message: "Variables require an initial value".to_string(),
@@ -150,7 +150,7 @@ fn pass1_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
     }
 }
 
-fn pass1_procedure(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_procedure(sexpr: &mut Token, errors: &mut Vec<Error>) {
     let sexpr = sexpr.sexpr_mut().unwrap();
     let si = sexpr[0].si;
 
@@ -173,12 +173,12 @@ fn pass1_procedure(sexpr: &mut Token, errors: &mut Vec<Error>) {
 
     if sexpr.len() >= 3 {
         for token in &mut sexpr[3..] {
-            pass1_token(token, errors);
+            validate_token(token, errors);
         }
     }
 }
 
-fn pass1_function(sexpr: &mut Token, errors: &mut Vec<Error>) {
+fn validate_function(sexpr: &mut Token, errors: &mut Vec<Error>) {
     let sexpr = sexpr.sexpr_mut().unwrap();
     let si = sexpr[0].si;
 
@@ -247,5 +247,5 @@ fn pass1_function(sexpr: &mut Token, errors: &mut Vec<Error>) {
         sexpr.push(Token { kind: TokenKind::SExpr(body), si: SourceInfo::default() });
     }
     
-    pass1_sexpr(&mut sexpr[3], errors);
+    validate_sexpr(&mut sexpr[3], errors);
 }
