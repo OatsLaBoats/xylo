@@ -27,6 +27,12 @@
 
 {function a-func [a Num Eq, b Num => a, b -> c] {a b} {do-something a b}}
 {let a-func [a Num Eq, b Num => a, b -> c] {fun {a b} {do-something a b}}}
+
+{let a-func
+  {fun {a b}
+    {println "Hello wolrd"}
+    {println "now adding some things"}
+    {+ a b}}}
  
 {struct My-Struct 
   {where 

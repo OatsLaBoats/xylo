@@ -4,13 +4,6 @@ use crate::{
     utils::*,
 };
 
-// We need to be able to execute top level macros at some point
-// Also have some way to do partial validation to a module for parts that have not been expanded
-// yet
-
-// pass1: core syntax validation, collection of functions and macros
-// pass2: function/macro syntax pass
-
 // Checks top level constructs for syntax errors + collection of functions
 pub fn pass1(program: &mut Program) -> Vec<Error> {
     let mut errors = Vec::new();
@@ -27,9 +20,7 @@ pub fn pass1_code(code: &mut Vec<Token>) -> Vec<Error> {
     let mut errors = Vec::new();
 
     for token in code {
-        if token.is_sexpr() {
-            pass1_sexpr(token, &mut errors);
-        }
+        pass1_token(token, &mut errors);
     }
 
     return errors;
@@ -56,6 +47,12 @@ fn pass1_module(module: &mut Module, errors: &mut Vec<Error>) {
     }
 }
 
+fn pass1_token(token: &mut Token, errors: &mut Vec<Error>) {
+    if token.is_sexpr() {
+        pass1_sexpr(token, errors);
+    }
+}
+
 fn pass1_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
     if sexpr.match_first_identifier("function") {
         pass1_function(sexpr, errors);
@@ -65,6 +62,17 @@ fn pass1_sexpr(sexpr: &mut Token, errors: &mut Vec<Error>) {
         pass1_let(sexpr, errors);
     } else if sexpr.match_first_identifier("fun") {
         pass1_fun(sexpr, errors);
+    } else {
+        pass1_call(sexpr, errors);
+    }
+}
+
+fn pass1_call(sexpr: &mut Token, errors: &mut Vec<Error>) {
+    let sexpr = sexpr.sexpr_mut().unwrap();
+    if sexpr.len() > 1 {
+        for token in &mut sexpr[1..] {
+            pass1_token(token, errors);
+        }
     }
 }
 
@@ -99,11 +107,13 @@ fn pass1_fun(sexpr: &mut Token, errors: &mut Vec<Error>) {
         });
     }
 
-    if let Some(body) = sexpr.get_mut(2) {
-        pass1_sexpr(body, errors);
+    if sexpr.len() >= 3 {
+        for token in &mut sexpr[3..] {
+            pass1_token(token, errors);
+        }
     } else {
         errors.push(Error {
-            message: "Lambda functions require a body".to_string(),
+            message: "Lambda functions require at least one expression in them".to_string(),
             si,
         });
     }
@@ -131,7 +141,7 @@ fn pass1_let(sexpr: &mut Token, errors: &mut Vec<Error>) {
     }
 
     if let Some(value) = sexpr.get_mut(3) {
-        pass1_sexpr(value, errors);
+        pass1_token(value, errors);
     } else {
         errors.push(Error {
             message: "Variables require an initial value".to_string(),
@@ -161,10 +171,9 @@ fn pass1_procedure(sexpr: &mut Token, errors: &mut Vec<Error>) {
         });
     }
 
-    for i in 3..sexpr.len() {
-        let token = &mut sexpr[i];
-        if token.is_sexpr() {
-            pass1_sexpr(token, errors);
+    if sexpr.len() >= 3 {
+        for token in &mut sexpr[3..] {
+            pass1_token(token, errors);
         }
     }
 }
@@ -234,6 +243,7 @@ fn pass1_function(sexpr: &mut Token, errors: &mut Vec<Error>) {
             body.push(sexpr.remove(i));
         }
 
+        body[2..].reverse();
         sexpr.push(Token { kind: TokenKind::SExpr(body), si: SourceInfo::default() });
     }
     
